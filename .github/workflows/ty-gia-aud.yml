@@ -1,0 +1,46 @@
+name: Theo dõi tỷ giá AUD
+
+on:
+  schedule:
+    # Chạy mỗi 20 phút, từ 7h–18h giờ VN (0–11 giờ UTC), Thứ 2 đến Thứ 7.
+    # (GitHub dùng giờ UTC; VN = UTC+7. Lịch có thể trễ vài phút lúc cao điểm.)
+    - cron: '*/20 0-11 * * 1-6'
+  workflow_dispatch:        # cho phép bấm chạy tay để test
+
+permissions:
+  contents: write           # để lưu lại state.json (giá lần trước)
+
+concurrency:
+  group: theo-doi-ty-gia-aud
+  cancel-in-progress: false
+
+jobs:
+  kiem-tra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cài thư viện
+        run: pip install -r requirements.txt
+
+      - name: Kiểm tra tỷ giá & gửi Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python kiem_tra_ty_gia.py
+
+      - name: Lưu lại giá mới nhất
+        run: |
+          if [[ -n "$(git status --porcelain state.json)" ]]; then
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git add state.json
+            git commit -m "Cập nhật giá AUD cao nhất"
+            git push
+          else
+            echo "Không có thay đổi để lưu."
+          fi
