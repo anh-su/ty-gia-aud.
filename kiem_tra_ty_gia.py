@@ -52,8 +52,11 @@ def fmt(gia):
 
 
 def so_webgia(x):
-    if x is None or (isinstance(x, float) and pd.isna(x)):
+    # Bảng đã được đọc với thousands='.', decimal=',' nên số tới đây thường đã đúng (vd 18500.0).
+    if x is None:
         return None
+    if isinstance(x, (int, float)):
+        return None if pd.isna(x) else float(x)
     s = str(x).strip()
     if not s or s in {"-", "—"}:
         return None
@@ -90,7 +93,7 @@ def gia_thi_truong():
 def nguon_webgia():
     resp = requests.get(WEBGIA_URL, headers=HEADERS, timeout=30)
     resp.raise_for_status()
-    tables = pd.read_html(StringIO(resp.text))
+    tables = pd.read_html(StringIO(resp.text), thousands=".", decimal=",")
     df = None
     for t in tables:
         cols = [" ".join(str(x) for x in c).strip() if isinstance(c, tuple) else str(c)
@@ -110,7 +113,7 @@ def nguon_webgia():
             continue
         for c in mua_cols:
             gia = so_webgia(row[c])
-            if gia and gia > 1000:
+            if gia and 5000 < gia < 100000:   # AUD mua vào ~18.000; loại số rác ngoài khoảng
                 loai = "tiền mặt" if "tiền mặt" in c.lower() else \
                        ("chuyển khoản" if "chuyển" in c.lower() else "mua")
                 out.append({"bank": bank, "loai": loai, "gia": gia,
