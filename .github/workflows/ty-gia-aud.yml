@@ -2,9 +2,11 @@ name: Theo dõi tỷ giá AUD
 
 on:
   schedule:
-    # Chạy mỗi 20 phút, từ 7h–18h giờ VN (0–11 giờ UTC), Thứ 2 đến Thứ 7.
-    # (GitHub dùng giờ UTC; VN = UTC+7. Lịch có thể trễ vài phút lúc cao điểm.)
-    - cron: '*/20 0-11 * * 1-6'
+    # 1) 7:00 sáng VN mỗi ngày (0:00 UTC) — LUÔN gửi bản tổng hợp, dù giá có đổi hay không.
+    - cron: '0 0 * * *'
+    # 2) Mỗi ~20 phút (phút 1, 21, 41), 7h–18h VN (0–11 UTC), Thứ 2–Thứ 7
+    #    — chỉ gửi KHI ngân hàng mua cao nhất thay đổi.
+    - cron: '1-59/20 0-11 * * 1-6'
   workflow_dispatch:        # cho phép bấm chạy tay để test
 
 permissions:
@@ -31,6 +33,9 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Lần chạy 7h sáng (cron '0 0 * * *') => FORCE=1 để luôn gửi bản tổng hợp.
+          # Các lần khác => FORCE=0, chỉ gửi khi giá cao nhất thay đổi.
+          FORCE: ${{ github.event.schedule == '0 0 * * *' && '1' || '0' }}
         run: python kiem_tra_ty_gia.py
 
       - name: Lưu lại giá mới nhất
