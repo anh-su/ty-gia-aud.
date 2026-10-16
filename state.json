@@ -1,6 +1,6 @@
 {
-  "cash_bank": "BIDV",
+  "cash_bank": "ACB",
   "cash_gia": 17573.0,
-  "transfer_bank": "Bảo Việt",
-  "transfer_gia": 17736.0
+  "transfer_bank": "ACB",
+  "transfer_gia": 17688.0
 }
